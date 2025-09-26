@@ -16,7 +16,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
+OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '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')
 
 # Known disease labels from the local model (lowercase)
 KNOWN_DISEASES = [

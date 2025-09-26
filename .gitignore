@@ -1,0 +1,5 @@
+﻿.venv/
+__pycache__/
+web/node_modules/
+server/.env
+.vscode/

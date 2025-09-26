@@ -1,6 +1,6 @@
 # Leaf Vision
 
-Premium AI web app for plant leaf disease identification + agronomy assistant (Vision Transformer inference + DeepSeek chat guidance). Educational decision‑support only (not a certified diagnostic tool).
+ AI web app for plant leaf disease identification + agronomy assistant (Vision Transformer inference + DeepSeek chat guidance). Educational decision‑support only (not a certified diagnostic tool).
 
 ---
 

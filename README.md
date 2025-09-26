@@ -216,21 +216,7 @@ gunicorn yourproject.wsgi:application
 
 ---
 
-## 13. Recommended .gitignore (key entries)
 
-```
-.venv/
-node_modules/
-dist/
-__pycache__/
-*.pyc
-.env
-server/.env
-db.sqlite3
-*.log
-```
-
----
 
 ## 14. Troubleshooting
 

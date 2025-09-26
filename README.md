@@ -74,16 +74,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-macOS / Linux:
-```bash
-cd Leaf\ Vision
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
 
----
 
 ## 6. Frontend Install
 

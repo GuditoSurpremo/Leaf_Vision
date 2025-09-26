@@ -250,7 +250,7 @@ pip check
 [MIT License](LICENSE).
 
 ---
-#18. About API Key
+## 18. About API Key
 - The API key are exposed so it already disabled.
 - To achieve the chat will working try for creating your own key in this site : https://openrouter.ai/settings/keys
 - add this in views.py in chat folder

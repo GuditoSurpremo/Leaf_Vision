@@ -2,6 +2,9 @@ import os
 import json
 from pathlib import Path
 import re
+import time
+import logging
+from typing import Tuple
 
 # Load .env once so OPENROUTER_API_KEY is available without manual input
 try:
@@ -11,12 +14,15 @@ except Exception:
     pass
 
 import requests
+from requests import exceptions as req_exc
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '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')
+logger = logging.getLogger(__name__)
+
+OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 
 # Known disease labels from the local model (lowercase)
 KNOWN_DISEASES = [
@@ -70,6 +76,95 @@ def detect_outline_and_sections(msg: str):
     return outline, sections
 
 
+TRANSIENT_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
+
+
+def _call_openrouter(payload: dict, headers: dict, max_retries: int = 2, base_delay: float = 1.5) -> Tuple[int, str, dict|None]:
+    """Return (status_code, raw_text, json_or_none). Retries transient failures."""
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            resp = requests.post(url, json=payload, headers=headers, timeout=45)
+            txt = resp.text
+            js = None
+            try:
+                js = resp.json()
+            except Exception:
+                pass
+            if resp.status_code in TRANSIENT_STATUS and attempt <= max_retries:
+                logger.warning("Transient upstream status %s attempt %s/%s - retrying", resp.status_code, attempt, max_retries)
+                time.sleep(base_delay * attempt)
+                continue
+            return resp.status_code, txt, js
+        except (req_exc.Timeout, req_exc.ConnectionError) as e:
+            if attempt <= max_retries:
+                logger.warning("Network error '%s' attempt %s/%s - retrying", e, attempt, max_retries)
+                time.sleep(base_delay * attempt)
+                continue
+            return 599, str(e), None
+        except Exception as e:  # non-network unexpected
+            logger.exception("Unexpected error during upstream call")
+            return 598, str(e), None
+
+
+def _format_upstream_error(up_status: int, raw_text: str) -> Tuple[int, dict]:
+    """Map upstream HTTP codes to local response (status_code, json_body)."""
+    # Default mapping
+    body = {
+        "error": {
+            "message": "Upstream model request failed",
+            "upstream_status": up_status,
+            "retryable": up_status in TRANSIENT_STATUS,
+            "details": None,
+        }
+    }
+    # Try to pull message from upstream JSON if present
+    try:
+        parsed = json.loads(raw_text)
+        if isinstance(parsed, dict):
+            # OpenRouter often wraps errors differently; attempt common keys
+            msg = parsed.get('error') or parsed.get('message') or parsed.get('detail')
+            if isinstance(msg, dict):
+                # sometimes {message: '...'} nested
+                inner = msg.get('message') or msg.get('msg') or msg.get('error')
+                if isinstance(inner, str):
+                    msg = inner
+            if isinstance(msg, str):
+                body['error']['details'] = msg[:500]
+    except Exception:
+        pass
+
+    # Specific overrides
+    if up_status == 401:
+        body['error']['message'] = "Invalid or missing OpenRouter API key"
+        return status.HTTP_401_UNAUTHORIZED, body
+    if up_status == 403:
+        body['error']['message'] = "Access forbidden by upstream (possible model restriction)"
+        return status.HTTP_403_FORBIDDEN, body
+    if up_status == 404:
+        body['error']['message'] = "Model or endpoint not found upstream"
+        return status.HTTP_502_BAD_GATEWAY, body
+    if up_status == 429:
+        body['error']['message'] = "Rate limit reached. Please retry later"
+        return status.HTTP_429_TOO_MANY_REQUESTS, body
+    if up_status in {500, 502, 503, 504}:
+        body['error']['message'] = "Upstream service is temporarily unavailable"
+        # 502 for gateway style failures
+        return status.HTTP_502_BAD_GATEWAY, body
+    if up_status in (598, 599):
+        body['error']['message'] = "Network failure contacting upstream"
+        return status.HTTP_503_SERVICE_UNAVAILABLE, body
+
+    # Other 4xx becomes Bad Gateway to keep abstraction (except ones handled above)
+    if 400 <= up_status < 500:
+        body['error']['message'] = "Upstream rejected the request"
+        return status.HTTP_502_BAD_GATEWAY, body
+
+    return status.HTTP_502_BAD_GATEWAY, body
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @authentication_classes([])
@@ -77,7 +172,10 @@ def chat(request):
     try:
         if not OPENROUTER_API_KEY:
             return Response({
-                "error": "OPENROUTER_API_KEY is not set. In PowerShell: $env:OPENROUTER_API_KEY='your_key' and restart the server."
+                "error": {
+                    "message": "OPENROUTER_API_KEY not set",
+                    "hint": "In PowerShell: $env:OPENROUTER_API_KEY='your_key'; (setx for persistence) then restart server"
+                }
             }, status=status.HTTP_400_BAD_REQUEST)
         data = request.data or {}
         user_message = data.get('message', '') or ''
@@ -155,13 +253,21 @@ def chat(request):
         if payload.get("response_format") is None:
             payload.pop("response_format")
 
-        resp = requests.post("https://openrouter.ai/api/v1/chat/completions", json=payload, headers=headers, timeout=45)
-        if resp.status_code >= 400:
-            return Response({"error": resp.text}, status=status.HTTP_502_BAD_GATEWAY)
-        resp_json = resp.json()
-        content = resp_json.get('choices', [{}])[0].get('message', {}).get('content', '')
+        up_status, raw_text, js = _call_openrouter(payload, headers)
+        if up_status != 200:
+            mapped_status, body = _format_upstream_error(up_status, raw_text)
+            return Response(body, status=mapped_status)
+
+        # Use parsed json if available
+        if not js:
+            try:
+                js = json.loads(raw_text)
+            except Exception:
+                return Response({"error": {"message": "Invalid JSON from upstream"}}, status=status.HTTP_502_BAD_GATEWAY)
+
+        content = js.get('choices', [{}])[0].get('message', {}).get('content', '')
         if not content:
-            return Response({"error": "Empty response from model."}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response({"error": {"message": "Empty response from model"}}, status=status.HTTP_502_BAD_GATEWAY)
 
         if force_json and disease and not outline_mode:
             try:
@@ -169,9 +275,11 @@ def chat(request):
                 if isinstance(guide, dict):
                     return Response({"guide": guide})
             except Exception:
-                pass
+                # Fall back to raw text
+                return Response({"reply": content})
             return Response({"reply": content})
         else:
             return Response({"reply": content})
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.exception("Unhandled exception in chat view")
+        return Response({"error": {"message": str(e)}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

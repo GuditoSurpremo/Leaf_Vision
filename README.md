@@ -26,7 +26,7 @@
 | Backend    | Python (Django or FastAPI style endpoints) |
 | Inference  | Fine‑tuned ViT (PyTorch) |
 | Chat       | OpenRouter (DeepSeek model) |
-| Optional   | Docker / GitHub Actions |
+
 
 ---
 

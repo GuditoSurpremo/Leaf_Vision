@@ -138,7 +138,7 @@ def _format_upstream_error(up_status: int, raw_text: str) -> Tuple[int, dict]:
 
     # Specific overrides
     if up_status == 401:
-        body['error']['message'] = "Invalid or missing OpenRouter API key"
+        body['error']['message'] = "Invalid or missing OpenRouter API key please try again"
         return status.HTTP_401_UNAUTHORIZED, body
     if up_status == 403:
         body['error']['message'] = "Access forbidden by upstream (possible model restriction)"

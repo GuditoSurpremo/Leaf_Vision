@@ -1,4 +1,4 @@
-## Whole Package Install
+## Whole Package Installation
 - To install with whole package zipfile about Leaf Vision please visit this site to download here's the link : https://drive.google.com/file/d/17eQhc-J1LH1dsiZ_guGjI9DmHvzQakAe/view?usp=sharing
 # Leaf Vision
 

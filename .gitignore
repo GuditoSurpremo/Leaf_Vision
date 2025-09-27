@@ -3,3 +3,4 @@ __pycache__/
 web/node_modules/
 server/__pycache__/
 .vscode/
+server/.env

@@ -1,3 +1,5 @@
+## Whole Package Install
+- To install with whole package zipfile about Leaf Vision please visit this site to download here's the link : https://drive.google.com/file/d/17eQhc-J1LH1dsiZ_guGjI9DmHvzQakAe/view?usp=sharing
 # Leaf Vision
 
  AI web app for plant leaf disease identification + agronomy assistant (Vision Transformer inference + chat guidance). Educational decision support only (not a certified diagnostic tool).

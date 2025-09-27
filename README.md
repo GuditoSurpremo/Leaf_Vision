@@ -251,6 +251,8 @@ pip check
 
 ---
 ## 18. About API Key
-- The API key are exposed so it already disabled.
-- To achieve the chat will working try for creating your own key in this site : https://openrouter.ai/settings/keys
-- add this in views.py in chat folder
+
+The .env where the API key are stored you need to visit this link to download.
+here's the link: https://drive.google.com/file/d/1wjjDo_Gz4hjNmC1-64FwvKhFxLfm-zHJ/view?usp=sharing
+please put this in the folder named server
+structure path: C:\Leaf Vision\server

@@ -1,7 +1,7 @@
 ## Whole Package Installation
 - To install with whole package zipfile about Leaf Vision due to modification of the code please visit this site to download here's the link : https://drive.google.com/file/d/17eQhc-J1LH1dsiZ_guGjI9DmHvzQakAe/view?usp=sharing
 
-- For the API key in .env file please visit the site OpenRouter.ai and create a API key and put it into the said file for the ai chatbot. here's the link: https://openrouter.ai/
+- For the API key in .env file please visit the site OpenRouter.ai. You must sign up and after that create a API key and put it into the said file for the ai chatbot. here's the link: https://openrouter.ai/
 
 
 # Leaf Vision

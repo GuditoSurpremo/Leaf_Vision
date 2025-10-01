@@ -1,5 +1,9 @@
 ## Whole Package Installation
 - To install with whole package zipfile about Leaf Vision due to modification of the code please visit this site to download here's the link : https://drive.google.com/file/d/17eQhc-J1LH1dsiZ_guGjI9DmHvzQakAe/view?usp=sharing
+
+for the API key in .env file please visit the site OpenRouter.ai and create a API key and put it into the said file for the ai chatbot. here's the link:
+
+
 # Leaf Vision
 
  AI web app for plant leaf disease identification + agronomy assistant (Vision Transformer inference + chat guidance). Educational decision support only (not a certified diagnostic tool).

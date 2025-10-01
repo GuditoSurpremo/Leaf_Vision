@@ -256,9 +256,3 @@ pip check
 [MIT License](LICENSE).
 
 ---
-## 18. About API Key
-
-The .env where the API key are stored you need to visit this link to download.
-here's the link: https://drive.google.com/file/d/1wjjDo_Gz4hjNmC1-64FwvKhFxLfm-zHJ/view?usp=sharing
-please put this in the folder named server
-structure path: C:\Leaf Vision\server
